@@ -9,6 +9,7 @@
 // because windows...
 #include <direct.h>
 #include <Windows.h>
+#include <mutex>
 #define getcwd _getcwd
 #define mkdir(x,y) _mkdir(x)
 #define snprintf _snprintf
@@ -33,6 +34,8 @@ namespace Utils
 //////////////////////////////////////////////////////////////////////////
 
 #if defined(_WIN32)
+		std::mutex mFileMutex; // Avoids enumerating N folders at the same time in threaded loadings
+
 		static std::string convertFromWideString(const std::wstring _wstring)
 		{
 			const int   numBytes = WideCharToMultiByte(CP_UTF8, 0, _wstring.c_str(), (int)_wstring.length(), nullptr, 0, nullptr, nullptr);
@@ -57,6 +60,8 @@ namespace Utils
 			{
 
 #if defined(_WIN32)
+				std::unique_lock<std::mutex> lock(mFileMutex);
+
 				WIN32_FIND_DATAW  findData;
 				const std::string wildcard = path + "/*";
 				const HANDLE      hFind    = FindFirstFileW(std::wstring(wildcard.begin(), wildcard.end()).c_str(), &findData);
